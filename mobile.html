@@ -1,0 +1,144 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>HelpDesk</title>
+<style>
+*{box-sizing:border-box}body{background:#121212;color:#fff;font-family:system-ui;margin:0}
+/* [CLAUDE 22/09] topbar identica ao appbar() do desktop (ui.py): fundo escuro, titulo
+   verde, sino+sair+selo a direita (so quando logado) — trocando a faixa verde antiga
+   "HelpDesk tempo real", que passava cara de prototipo. */
+.appbar{background:#0B0B0B;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;z-index:50}
+.appbar-title{color:#1DB954;font-weight:800;font-size:20px}
+.appbar-acts{display:flex;align-items:center;gap:2px}
+.appbar-icon{background:transparent;border:0;color:#8A8A8A;width:auto;padding:8px;margin:0;font-size:17px;border-radius:50%;position:relative;cursor:pointer}
+.appbar-badge{position:absolute;top:2px;right:2px;min-width:16px;height:16px;line-height:16px;padding:0 4px;font-size:10px}
+.appbar-avatar{background:#1A1A1A;color:#1DB954;width:36px;height:36px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin-left:6px;font-size:16px}
+.wrap{padding:14px;max-width:480px;margin:auto}
+.hero{background:linear-gradient(135deg,#1DB954,#0E5C2A);color:#06240F;border-radius:18px;padding:18px;margin:12px 0}
+.hero h2{margin:4px 0 2px;font-size:24px}
+.hero p{margin:0;font-size:12px}
+/* [CLAUDE 22/09] "Ola, {nome}!" (#hero-ola, uma <small>) herdava o small{color:#B3B3B3}
+   global (cinza) por cima do fundo verde do .hero — ilegivel. Forca a cor escura. */
+.hero small{color:#06240F;font-weight:700}
+.hero-icon{font-size:30px;line-height:1;margin-bottom:2px}
+.erro{color:#E53935;font-size:13px;margin:4px 2px;min-height:16px}
+.card{background:#1E1E1E;border:1px solid #2A2A2A;border-radius:16px;padding:14px;margin:10px 0}
+.card .titulo{font-weight:800;font-size:15px;margin:2px 0}
+.card .desc{color:#B3B3B3;font-size:13px;margin:2px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.meta{display:flex;align-items:center;gap:6px;color:#8A8A8A;font-size:12px}
+.acoes{display:flex;gap:8px;margin-top:10px}
+.acoes button{margin-top:0}
+.btn-ghost{background:transparent;border:1px solid #2A2A2A;color:#fff}
+.btn-danger{background:transparent;border:1px solid #E53935;color:#E53935}
+input,select,textarea{width:100%;background:#1A1A1A;border:1px solid #2A2A2A;color:#fff;border-radius:12px;padding:12px;margin:6px 0}
+button{background:#1DB954;border:0;border-radius:12px;padding:14px;width:100%;font-weight:800;margin-top:8px;color:#0B0B0B}
+button.ghost{background:transparent;border:1px solid #2A2A2A;color:#fff}
+.badge{display:inline-block;background:#1DB954;color:#0B0B0B;font-weight:800;font-size:11px;border-radius:20px;padding:2px 10px}
+.badge.ab{background:#1DB954}.badge.ea{background:#FFC107}.badge.tr{background:#3FA9F5}.badge.fe{background:#8A8A8A}
+small{color:#B3B3B3}
+#toasts{position:fixed;top:10px;right:10px;z-index:99;width:min(340px,90vw)}
+.toast{background:#1E1E1E;border:1px solid #1DB954;border-radius:14px;padding:12px;margin-bottom:8px}
+.hidden{display:none}
+.tabs{display:flex;gap:8px;margin:10px 0}
+.tabs button{flex:1}
+.filters{display:flex;gap:8px}
+.filters input,.filters select{margin:6px 0}
+.okbox{background:#0E2F1B;border:1px solid #1DB954;border-radius:12px;padding:12px;margin-top:10px}
+</style></head><body>
+<!-- [CLAUDE 22/09] topbar unica (login + logado), igual ui.py: appbar(). Sino/Sair só
+     aparecem depois do login (classe hidden removida no login()). -->
+<div class="appbar">
+<span class="appbar-title">HelpDesk</span>
+<div class="appbar-acts">
+<button class="appbar-icon hidden" id="btn-sino" onclick="verHist()" title="Notificacoes">🔔<span id="sino-n" class="badge appbar-badge" style="display:none">0</span></button>
+<button class="appbar-icon hidden" id="btn-sair" onclick="sair()" title="Sair">⎋</button>
+<span class="appbar-avatar">🎧</span>
+</div>
+</div>
+<div class="wrap">
+<div id="toasts"></div>
+<!-- [CLAUDE 22/09] tela de login reconstruida igual nav.py: tela_login() — hero
+     gradiente com icone+titulo+subtitulo, campos padrao, botao Entrar, cartao de dica. -->
+<div id="tela-login">
+<div class="hero login-hero">
+<div class="hero-icon">🎧</div>
+<h2>HelpDesk</h2>
+<p>Entre com seu usuario da empresa.</p>
+</div>
+<input id="u" placeholder="Seu usuario da empresa"/>
+<input id="p" type="password" placeholder="Sua senha"/>
+<div id="quem" class="erro"></div>
+<button onclick="login()">Entrar</button>
+</div>
+<div id="app" class="hidden">
+<div class="hero"><small id="hero-ola">Ola!</small><h2 id="hero-titulo">Meus chamados</h2><p id="hero-sub">Acompanhe e confirme a resolucao.</p></div>
+<div class="tabs"><button id="b-lista" onclick="aba('lista')">Chamados</button><button id="b-novo" onclick="aba('novo')">+ Novo</button></div>
+<div id="aba-lista">
+<div class="tabs" id="abas-ti" style="display:none"><button id="b-ativos" onclick="filtroTi('ativos')">Ativos</button><button id="b-fechados" class="ghost" onclick="filtroTi('fechados')">Fechados</button></div>
+<!-- [CLAUDE 22/09] filtro so pro TI; login() esconde pro funcionario -->
+<div class="filters" id="filtros"><input id="q" placeholder="Buscar motivo, descricao ou #id..." oninput="lista()"/><select id="fs" onchange="lista()"><option>Todos</option><option>Aberto</option><option>Em atendimento</option><option>Tratado</option><option>Fechado</option></select></div>
+<div><small id="status"></small></div><div id="lst"></div></div>
+<div id="aba-novo" class="hidden card"><b>Novo chamado</b>
+<select id="mot"><option>Problema com a conexao</option><option>Problema com o site</option><option>Problema com o aplicativo</option><option>Duvida / suporte geral</option><option>Outro</option></select>
+<textarea id="desc" rows="4" placeholder="Descreva..."></textarea>
+<button onclick="criar()">Confirmar chamado</button></div>
+<div id="aba-edit" class="hidden card"><b>Editar chamado <span id="edit-id"></span></b>
+<select id="edit-mot"><option>Problema com a conexao</option><option>Problema com o site</option><option>Problema com o aplicativo</option><option>Duvida / suporte geral</option><option>Outro</option></select>
+<textarea id="edit-desc" rows="4"></textarea>
+<button onclick="salvarEdicao()">Salvar</button><button class="ghost" onclick="aba('lista')">Cancelar</button></div>
+</div></div>
+<script>
+let T="",PAPEL="",V=0,VISTOS=new Set(),EU="",JA=new Set(),HIST=[],CACHE=[],ABA_TI="ativos",EDIT_ID=null;
+const MSG={Aberto:"Novo chamado. Analise para atender!","Em atendimento":"Seu chamado ja esta sendo verificado!",Tratado:"Seu chamado foi tratado. Verifique se foi resolvido!",Fechado:"Chamado resolvido!"};
+function beep(){try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=0.08;o.start();o.stop(a.currentTime+0.25);}catch(e){}}
+function toast(t,x){beep();HIST.unshift({t:t,x:x,h:new Date().toLocaleTimeString()});HIST=HIST.slice(0,20);updSino();const d=document.createElement("div");d.className="toast";d.innerHTML="<b>"+t+"</b><br/><small>"+x+"</small>";toasts.appendChild(d);setTimeout(()=>d.remove(),5000);}
+function updSino(){const b=document.getElementById("sino-n");if(b){b.textContent=HIST.length;b.style.display=HIST.length?"inline-block":"none";}}
+function verHist(){alert(HIST.length?HIST.map(h=>h.h+" "+h.t+" - "+h.x).join("\n"):"Nenhuma notificacao recente.");HIST=[];updSino();}
+function uma(id,st){const k=id+"|"+st;if(JA.has(k))return false;JA.add(k);return true;}
+async function login(){let r=await fetch("login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usuario:u.value,senha:p.value})});let j=await r.json();if(!r.ok){quem.textContent="Erro: "+(j.detail||r.status);return;}T=j.token;PAPEL=j.papel;EU=j.nome;document.getElementById("tela-login").classList.add("hidden");document.getElementById("app").classList.remove("hidden");document.getElementById("btn-sino").classList.remove("hidden");document.getElementById("btn-sair").classList.remove("hidden");VISTOS=new Set();V=0;ABA_TI="ativos";EDIT_ID=null;document.getElementById("abas-ti").style.display=PAPEL=="ti"?"flex":"none";document.getElementById("filtros").style.display=PAPEL=="ti"?"flex":"none";document.getElementById("b-novo").style.display=PAPEL=="ti"?"none":"";document.getElementById("hero-ola").textContent="Ola, "+EU+"!";document.getElementById("hero-titulo").textContent=PAPEL=="ti"?"Painel do TI":"Meus chamados";document.getElementById("hero-sub").textContent=PAPEL=="ti"?"Analise os chamados.":"Acompanhe e confirme a resolucao.";lista();setInterval(poll,3000);}
+function sair(){location.reload();}
+// [MUSE 22/09] Fase 1: abas Ativos/Fechados do TI + identidade visual do desktop.
+function filtroTi(q){ABA_TI=q;document.getElementById("b-ativos").className=q=="ativos"?"":"ghost";document.getElementById("b-fechados").className=q=="fechados"?"":"ghost";lista();}
+function aba(q){document.getElementById("aba-lista").classList.toggle("hidden",q!="lista");document.getElementById("aba-novo").classList.toggle("hidden",q!="novo");document.getElementById("aba-edit").classList.toggle("hidden",q!="edit");}
+function cls(st){return st=="Aberto"?"ab":st=="Em atendimento"?"ea":st=="Tratado"?"tr":"fe";}
+// [MUSE 22/09] Fase 1: card identico ao desktop; func: Editar+Excluir (nunca Fechado); Fechado sem acoes.
+// [CLAUDE 22/09] TI nao edita mais motivo/descricao (so muda status + exclui); botao
+// "Editar" e o botao "+ Novo" (fileira de abas, ver login()) somem pro TI. Backend ja
+// recusa (server.py: criar()/editar() 403 pra papel ti).
+function cardH(c){let extra="";const fech=c.status=="Fechado";
+// [MUSE 22/09] Fluxo em 1 clique: TI Aberto="Iniciar tratativa", Em atendimento=
+// "Finalizar tratativa". TI em Tratado so aguarda o usuario confirmar.
+if(PAPEL=="ti"&&!fech){
+if(c.status=="Aberto"){extra='<div class="acoes"><button onclick="fluxo('+c.id+',\'Em atendimento\',\'Tratativa iniciada!\')">Iniciar tratativa</button></div>';}
+else if(c.status=="Em atendimento"){extra='<div class="acoes"><button onclick="fluxo('+c.id+',\'Tratado\',\'Chamado atualizado. Aguarde a confirmacao do usuario.\')">Finalizar tratativa</button></div>';}
+else{extra='<div class="acoes"><button class="ghost" onclick="lista()">Aguardando confirmacao do usuario</button></div>';}
+extra+='<div class="acoes"><button class="btn-danger" onclick="excluir('+c.id+')">Excluir</button></div>';}
+if(PAPEL!="ti"&&c.status=="Tratado"){extra='<div class="okbox">Notif: '+MSG.Tratado+'<br/><button onclick="confirmar('+c.id+')">Confirmar - foi resolvido!</button></div>';}
+if(PAPEL=="ti"&&fech){let obs=c.observacao||"";extra='<div class="okbox">Auditoria (TI): '+(obs?obs:'<i>sem observacao</i>')+'<br/><button class="ghost" onclick="salvarObs('+c.id+')">Adicionar observacao</button></div>';}
+if(PAPEL!="ti"&&fech&&(c.observacao||"")){extra='<div class="okbox">Observacao do TI: '+c.observacao+'</div>';}
+let linha="";if(PAPEL!="ti"&&!fech){linha='<div class="acoes"><button class="btn-ghost" onclick="abrirEdicao('+c.id+')">Editar</button><button class="btn-danger" onclick="excluir('+c.id+')">Excluir</button></div>';}
+return '<div class="card"><div class="row"><span class="titulo">#'+c.id+' - '+c.motivo+'</span><span class="badge '+cls(c.status)+'">'+c.status+'</span></div><div class="desc">'+c.descricao+'</div><div class="meta">'+c.usuario+' - '+c.criado_em+'</div>'+extra+linha+'</div>';}
+// [MUSE 22/09] Fase 1: filtros busca+status e aba Ativos/Fechados aplicados no render.
+// [MUSE 22/09] Fluxo inline sem abrir nada: TI Aberto->Em atendimento->Tratado;
+// func Tratado->Fechado (confirmar). Status continua restrito no server (PATCH).
+async function fluxo(id,dest,ok){let r=await fetch("chamados/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","X-Token":T},body:JSON.stringify({status:dest})});if(r.ok){lista();toast("Pronto!",ok);}else{let j=await r.json().catch(()=>({}));alert(j.detail||r.status);}}
+// [CLAUDE 22/09] funcionario nao tem filtro nem controle de Fechados — sempre so os
+// ativos, sem opcao de alternar (mesma regra do home.py: filtrados()).
+function filtrar(j){let t=(document.getElementById("q").value||"").toLowerCase();let s=document.getElementById("fs").value||"Todos";let out=j.filter(c=>{if(PAPEL=="ti"){if(ABA_TI=="ativos"&&c.status=="Fechado")return false;if(ABA_TI=="fechados"&&c.status!="Fechado")return false;}else if(c.status=="Fechado"){return false;}if(s!="Todos"&&c.status!=s)return false;if(t&&!(c.motivo||"").toLowerCase().includes(t)&&(c.descricao||"").toLowerCase().includes(t)===false&&(c.usuario||"").toLowerCase().includes(t)===false&&t!=String(c.id))return false;return true;});return out;}
+async function lista(){let r=await fetch("chamados",{headers:{"X-Token":T}});let j=await r.json();CACHE=j;let vr=await fetch("versao",{headers:{"X-Token":T}}).then(x=>x.json()).catch(()=>({v:0}));V=vr.v||0;VISTOS=new Set(j.map(c=>c.id));let f=filtrar(j);lst.innerHTML=f.map(cardH).join("")||"<small>Nenhum</small>";status.textContent=EU+" - "+(PAPEL=="ti"?"visao TI":"so os seus")+" - tempo real";}
+async function poll(){try{let r=await fetch("eventos?desde="+V,{headers:{"X-Token":T}});if(!r.ok)return;let j=await r.json();V=j.versao;if(!j.mudancas.length)return;let novos=j.mudancas.filter(c=>!VISTOS.has(c.id));j.mudancas.forEach(c=>VISTOS.add(c.id));await lista();novos.forEach(c=>{if(PAPEL=="ti"&&uma(c.id,c.status))toast("Novo chamado!","#"+c.id+" "+c.motivo+" - "+c.usuario);});j.mudancas.forEach(c=>{if(PAPEL!="ti"&&(c.status=="Em atendimento"||c.status=="Tratado")&&uma(c.id,c.status))toast("Atualizacao!","#"+c.id+": "+MSG[c.status]);if(PAPEL=="ti"&&c.status=="Fechado"&&uma(c.id,c.status))toast("Chamado #"+c.id+" fechado","Confirmado pelo usuario.");});}catch(e){}}
+// [MUSE 22/09] Observacao do TI em Fechado (auditoria): prompt simples p/ registrar,
+// texto exibido no card p/ todos. So TI grava; server recusa resto (403/422).
+// [CLAUDE 22/09] PUT substitui o texto (nao acrescenta) — sem pre-preencher, editar uma
+// observacao existente pelo prompt() apagava ela sem querer. Busca do CACHE e mostra
+// como valor padrao do prompt, igual o campo do Flet ja faz (value=obs_atual).
+async function salvarObs(id){let c=CACHE.find(x=>x.id==id);let v=prompt("Observacao do TI (auditoria):",(c&&c.observacao)||"");if(v===null)return;let r=await fetch("chamados/"+id+"/observacao",{method:"PUT",headers:{"Content-Type":"application/json","X-Token":T},body:JSON.stringify({observacao:v})});if(r.ok){lista();toast("Registrado!","Observacao salva.");}else{let j=await r.json().catch(()=>({}));alert(j.detail||r.status);}}
+async function criar(){let r=await fetch("chamados",{method:"POST",headers:{"Content-Type":"application/json","X-Token":T},body:JSON.stringify({motivo:mot.value,descricao:desc.value})});if(r.ok){desc.value="";aba("lista");lista();toast("Enviado!","TI notificado.");}else alert("Erro "+r.status);}
+async function confirmar(id){let r=await fetch("chamados/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","X-Token":T},body:JSON.stringify({status:"Fechado"})});if(r.ok){lista();toast("Resolvido!","Obrigado por confirmar!");}}
+// [MUSE 22/09] Fase 1: Editar (PUT) + Excluir (DELETE) com regras de Fechado no server.
+function abrirEdicao(id){let c=CACHE.find(x=>x.id==id);if(!c)return;EDIT_ID=id;document.getElementById("edit-id").textContent="#"+id;document.getElementById("edit-mot").value=c.motivo;document.getElementById("edit-desc").value=c.descricao;aba("edit");}
+async function salvarEdicao(){let r=await fetch("chamados/"+EDIT_ID,{method:"PUT",headers:{"Content-Type":"application/json","X-Token":T},body:JSON.stringify({motivo:document.getElementById("edit-mot").value,descricao:document.getElementById("edit-desc").value})});if(r.ok){aba("lista");lista();toast("Salvo!","Chamado atualizado.");}else{let j=await r.json().catch(()=>({}));alert(j.detail||r.status);}}
+async function excluir(id){if(!confirm("Excluir chamado #"+id+"?"))return;let r=await fetch("chamados/"+id,{method:"DELETE",headers:{"X-Token":T}});if(r.ok){lista();toast("Excluido","Chamado removido.");}else{let j=await r.json().catch(()=>({}));alert(j.detail||r.status);}}
+</script>
+
+</body></html>

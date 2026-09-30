@@ -1,0 +1,50 @@
+# ============================================================
+# HelpDesk — o que NAO vai para o repositorio
+# Regra: codigo-fonte entra; dados locais, credenciais reais,
+# backups e artefatos de build ficam de fora.
+# ============================================================
+
+# ---------- Dados locais / sensiveis (NUNCA versionar) ----------
+# usuarios.json guarda os hashes das senhas reais; chamados.json e
+# helpdesk.db guardam os chamados de producao. O repo tem apenas
+# credenciais de teste, em usuarios.exemplo.json.
+usuarios.json
+chamados.json
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*_backup_*.json
+*_backup_*.db
+/backup_pre_v1/
+
+# ---------- Snapshots antigos do projeto (copias completas) ----------
+versao_estavel_*/
+
+# ---------- Artefatos de build (gerados por `flet build` / `flet pack`) ----------
+build/
+dist/
+*.exe
+*.zip
+*.apk
+*.aab
+*.spec
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+
+# ---------- Logs ----------
+*.log
+
+# ---------- Ferramentas locais / IDE ----------
+.claude/
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini

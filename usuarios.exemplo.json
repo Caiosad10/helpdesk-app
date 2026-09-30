@@ -1,0 +1,17 @@
+{
+  "ti": {
+    "senha": "84269cabe818a02744e579bcae26fb1c5be0ebd3ff28620425371e06efb4cc06",
+    "papel": "ti",
+    "nome": "TI - Teste"
+  },
+  "maria": {
+    "senha": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "papel": "func",
+    "nome": "Maria"
+  },
+  "joao": {
+    "senha": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "papel": "func",
+    "nome": "Joao"
+  }
+}

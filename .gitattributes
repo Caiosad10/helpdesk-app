@@ -1,0 +1,10 @@
+# Normaliza fim de linha no repo (LF) e mantem CRLF onde o Windows exige.
+* text=auto
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binarios (nao mexer)
+*.png binary
+*.ico binary
+*.db binary
